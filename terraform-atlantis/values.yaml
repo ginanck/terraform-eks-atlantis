@@ -1,0 +1,165 @@
+# Atlantis Helm Chart Values
+# This file contains the configuration for Atlantis deployment
+
+# Atlantis URL configuration
+atlantisUrl: ""  # Will be set via Terraform variables
+
+# GitHub Organization allowlist
+orgAllowlist: ""  # Will be set via Terraform variables
+
+# GitHub configuration
+github:
+  user: ""    # Will be set via Terraform variables
+  token: ""   # Will be set via Terraform variables
+  secret: ""  # Will be set via Terraform variables
+
+# Service configuration
+service:
+  type: LoadBalancer
+  port: 80
+  annotations: {}
+
+# Replica configuration
+replicaCount: 1
+
+# Resource configuration
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "100m"
+  limits:
+    memory: "1Gi"
+    cpu: "500m"
+
+# Persistent storage configuration
+dataStorage: "10Gi"
+storageClassName: "gp2"
+
+# Security context configuration
+securityContext:
+  fsGroup: 1000
+  runAsUser: 100
+  runAsNonRoot: true
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: "RuntimeDefault"
+
+# Container security context
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - "ALL"
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+
+# Service account configuration
+serviceAccount:
+  create: false
+  name: "atlantis"
+
+# Environment variables
+environment:
+  ATLANTIS_PORT: "4141"
+  ATLANTIS_DATA_DIR: "/atlantis"
+  ATLANTIS_LOG_LEVEL: "info"
+  ATLANTIS_WRITE_GIT_CREDS: "true"
+
+# Ingress configuration (disabled by default, using LoadBalancer)
+ingress:
+  enabled: false
+
+# Health checks configuration
+readinessProbe:
+  enabled: true
+  path: "/healthz"
+  port: 4141
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+livenessProbe:
+  enabled: true
+  path: "/healthz"
+  port: 4141
+  initialDelaySeconds: 60
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+# Node selector, tolerations and affinity
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Extra volumes for temporary files
+extraVolumes:
+  - name: "tmp"
+    emptyDir: {}
+
+# Extra volume mounts
+extraVolumeMounts:
+  - name: "tmp"
+    mountPath: "/tmp"
+
+# Additional labels
+labels: {}
+
+# Additional annotations
+annotations: {}
+
+# Image configuration (using chart defaults)
+image:
+  repository: "runatlantis/atlantis"
+  tag: ""  # Use chart default
+  pullPolicy: "IfNotPresent"
+
+# Image pull secrets
+imagePullSecrets: []
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod labels
+podLabels: {}
+
+# Deployment strategy
+strategy:
+  type: "RollingUpdate"
+  rollingUpdate:
+    maxUnavailable: 1
+    maxSurge: 1
+
+# Horizontal Pod Autoscaler (disabled by default)
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+# Network policy (disabled by default)
+networkPolicy:
+  enabled: false
+
+# Service monitor for Prometheus (disabled by default)
+serviceMonitor:
+  enabled: false
+
+# Additional configuration files
+configMap:
+  enabled: false
+
+# Init containers
+initContainers: []
+
+# Sidecar containers
+sidecars: []
