@@ -5,13 +5,3 @@ projects:
     autoplan:
       when_modified: ["*.tf", "*.tfvars"]
       enabled: true
-
-  - name: terraform-atlantis
-    dir: terraform-atlantis
-    autoplan:
-      when_modified: ["*.tf", "*.tfvars"]
-      enabled: true
-
-
-# Atlantis configuration for separate infrastructure and application deployments
-# This file should be in the root of your repository
