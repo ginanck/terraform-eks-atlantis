@@ -1,7 +1,7 @@
 # Terraform EKS with Atlantis - Simplified Makefile
 # Usage: make <target> PROJECT=<project-directory>
 
-.PHONY: help init fmt plan apply destroy clean setup-config check-prereqs setup-kubeconfig status infrastructure atlantis all
+.PHONY: help init fmt plan apply destroy clean setup-config check-prereqs setup-kubeconfig list-clusters status infrastructure atlantis all validate
 
 # Variables
 AWS_REGION := eu-central-1
@@ -9,7 +9,7 @@ PROJECT_NAME := atlantis
 CLUSTER_NAME := $(PROJECT_NAME)-eks
 
 # Utility targets that don't require PROJECT parameter
-UTILITY_TARGETS := help check-prereqs setup-kubeconfig status infrastructure atlantis all
+UTILITY_TARGETS := help check-prereqs setup-kubeconfig list-clusters status infrastructure atlantis all
 
 # Check if PROJECT is required for this target
 ifeq (,$(filter $(MAKECMDGOALS),$(UTILITY_TARGETS)))
@@ -25,13 +25,14 @@ endif
 
 # Default target
 help: ## Show this help message
-	@echo "Terraform EKS with Atlantis - Simplified Makefile"
+	@echo "Terraform EKS with Atlantis"
 	@echo ""
 	@echo "Usage: make <target> PROJECT=<project-directory>"
 	@echo ""
 	@echo "Core Terraform Operations:"
 	@echo "  init      - Initialize Terraform"
 	@echo "  fmt       - Format Terraform files"
+	@echo "  validate  - Validate Terraform configuration"
 	@echo "  plan      - Plan deployment"
 	@echo "  apply     - Apply configuration"
 	@echo "  destroy   - Destroy resources"
@@ -41,6 +42,7 @@ help: ## Show this help message
 	@echo "  check-prereqs    - Check required tools"
 	@echo "  setup-config     - Setup configuration files"
 	@echo "  setup-kubeconfig - Configure kubectl"
+	@echo "  list-clusters    - List EKS clusters"
 	@echo "  status           - Show deployment status"
 	@echo ""
 	@echo "Shortcuts:"
@@ -55,27 +57,27 @@ help: ## Show this help message
 # Core Terraform operations
 init: ## Initialize Terraform
 	@echo "🔧 Initializing $(PROJECT)..."
-	@cd $(PROJECT) && terraform init -input=false > /dev/null
+	@cd $(PROJECT) && terraform init -input=false
 	@echo "✅ Terraform initialized"
 
 fmt: ## Format Terraform files
 	@echo "🎨 Formatting $(PROJECT)..."
-	@cd $(PROJECT) && terraform fmt > /dev/null
+	@cd $(PROJECT) && terraform fmt
 	@echo "✅ Files formatted"
+
+validate: init ## Validate Terraform configuration
+	@echo "🔍 Validating $(PROJECT)..."
+	@cd $(PROJECT) && terraform validate
+	@echo "✅ Configuration valid"
 
 plan: init ## Plan deployment
 	@echo "📋 Planning $(PROJECT)..."
 	@cd $(PROJECT) && TF_CLI_ARGS_plan="-compact-warnings" terraform plan -input=false
 
-apply: init ## Apply configuration
+apply: ## Apply configuration
 	@echo "🚀 Applying $(PROJECT)..."
-	@cd $(PROJECT) && terraform apply -input=false -auto-approve > /dev/null
+	@cd $(PROJECT) && terraform apply -input=false -auto-approve
 	@echo "✅ $(PROJECT) deployed"
-	@if [ "$(PROJECT)" = "terraform-infrastructure" ]; then \
-		echo "⚙️  Configuring kubectl..."; \
-		aws eks update-kubeconfig --region $(AWS_REGION) --name $(CLUSTER_NAME) > /dev/null 2>&1; \
-		echo "✅ kubectl configured"; \
-	fi
 	@if [ "$(PROJECT)" = "terraform-atlantis" ]; then \
 		echo "⏳ Checking Atlantis service..."; \
 		sleep 5; \
@@ -84,7 +86,7 @@ apply: init ## Apply configuration
 
 destroy: ## Destroy resources
 	@echo "🗑️  Destroying $(PROJECT)..."
-	@cd $(PROJECT) && terraform destroy -input=false -auto-approve > /dev/null
+	@cd $(PROJECT) && terraform destroy -input=false -auto-approve
 	@echo "✅ $(PROJECT) destroyed"
 
 clean: ## Clean cache
@@ -111,10 +113,15 @@ check-prereqs: ## Check required tools
 	@aws sts get-caller-identity >/dev/null 2>&1 || { echo "❌ AWS credentials not configured"; exit 1; }
 	@echo "✅ All tools ready"
 
-setup-kubeconfig: ## Configure kubectl
-	@echo "⚙️  Configuring kubectl..."
-	@aws eks update-kubeconfig --region $(AWS_REGION) --name $(CLUSTER_NAME) > /dev/null 2>&1
-	@echo "✅ kubectl configured"
+setup-kubeconfig: ## Configure kubectl (Usage: make setup-kubeconfig [CLUSTER_NAME=custom-name])
+	$(eval EFFECTIVE_CLUSTER_NAME := $(if $(CLUSTER_NAME),$(CLUSTER_NAME),$(PROJECT_NAME)-eks))
+	@echo "⚙️  Configuring kubectl for cluster: $(EFFECTIVE_CLUSTER_NAME)..."
+	@aws eks update-kubeconfig --region $(AWS_REGION) --name $(EFFECTIVE_CLUSTER_NAME)
+	@echo "✅ kubectl configured for $(EFFECTIVE_CLUSTER_NAME)"
+
+list-clusters: ## List EKS clusters
+	@echo "📋 EKS clusters in $(AWS_REGION):"
+	@aws eks list-clusters --region $(AWS_REGION) --query 'clusters[]' --output table
 
 status: ## Show deployment status
 	@echo "📊 Status:"

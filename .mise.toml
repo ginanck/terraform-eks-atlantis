@@ -1,0 +1,7 @@
+# Disable packer plugin parsing of terraform files
+[tools]
+# Add your tools here if needed
+
+[settings]
+# Disable legacy file parsing for packer plugin
+legacy_version_file = false
