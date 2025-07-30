@@ -11,7 +11,6 @@ This project deploys an Amazon EKS cluster and Atlantis application using separa
 - **Atlantis**: Deployed via Helm chart for GitOps workflow automation
 
 ## 📁 Project Structure
-
 ```
 terraform-eks-atlantis/
 ├── terraform-infrastructure/    # EKS cluster and infrastructure
