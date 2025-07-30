@@ -93,3 +93,22 @@ output "environment" {
   description = "Environment name"
   value       = var.environment
 }
+
+# IAM Access Entries Information
+output "cluster_access_entries" {
+  description = "Map of access entries added to the cluster"
+  value       = module.eks.access_entries
+}
+
+output "authentication_mode" {
+  description = "The authentication mode for the cluster"
+  value       = "API_AND_CONFIG_MAP"
+}
+
+output "assume_role_commands" {
+  description = "Commands to assume the IAM roles for cluster access"
+  value = {
+    eks_admin = "aws sts assume-role --role-arn ${aws_iam_role.eks_admin_role.arn} --role-session-name eks-admin-session"
+    eks_read_only = "aws sts assume-role --role-arn ${aws_iam_role.eks_read_only_role.arn} --role-session-name eks-read-only-session"
+  }
+}

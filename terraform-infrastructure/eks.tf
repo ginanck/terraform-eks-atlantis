@@ -64,11 +64,10 @@ resource "aws_security_group" "eks_node_sg" {
 }
 
 # EKS Cluster
-# Note: Using EKS module v19.x which has deprecation warnings for inline_policy
-# These are harmless and will be resolved in future module updates
+# Note: Using EKS module v20.x which supports modern IAM access entries
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 19.21"
+  version = "~> 20.0"
 
   cluster_name    = local.cluster_name
   cluster_version = var.kubernetes_version
@@ -124,21 +123,34 @@ module "eks" {
     }
   }
 
-  # aws-auth configmap
-  manage_aws_auth_configmap = true
-
-  aws_auth_roles = [
-    {
-      rolearn  = aws_iam_role.eks_admin_role.arn
-      username = "eks-admin"
-      groups   = ["system:masters"]
-    },
-    {
-      rolearn  = aws_iam_role.eks_read_only_role.arn
-      username = "eks-read-only"
-      groups   = ["system:readers"]
-    },
-  ]
+  # IAM Access Entries (modern approach)
+  authentication_mode = "API_AND_CONFIG_MAP"
+  
+  access_entries = {
+    eks-admin = {
+      principal_arn     = aws_iam_role.eks_admin_role.arn
+      policy_associations = {
+        admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+    
+    eks-read-only = {
+      principal_arn     = aws_iam_role.eks_read_only_role.arn
+      policy_associations = {
+        viewer = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+  }
 
   tags = local.tags
 }
