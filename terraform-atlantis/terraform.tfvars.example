@@ -1,10 +1,6 @@
-# AWS Configuration
-aws_region = "eu-central-1"
+# Project Configuration
 project_name = "atlantis-eks"
 environment = "dev"
-
-# EKS Cluster Configuration
-cluster_name = "atlantis-eks"  # This should match the output from infrastructure deployment
 
 # GitHub Configuration for Atlantis
 github_user = "your-github-username"

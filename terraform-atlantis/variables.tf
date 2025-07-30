@@ -1,9 +1,3 @@
-variable "aws_region" {
-  description = "AWS region"
-  type        = string
-  default     = "eu-central-1"
-}
-
 variable "project_name" {
   description = "Name of the project"
   type        = string
@@ -16,18 +10,13 @@ variable "environment" {
   default     = "dev"
 }
 
-variable "cluster_name" {
-  description = "Name of the EKS cluster"
-  type        = string
-}
-
 variable "github_user" {
   description = "GitHub username for Atlantis"
   type        = string
 }
 
 variable "github_token" {
-  description = "GitHub token for Atlantis"
+  description = "GitHub Personal Access Token for Atlantis"
   type        = string
   sensitive   = true
 }

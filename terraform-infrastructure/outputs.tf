@@ -8,6 +8,11 @@ output "cluster_endpoint" {
   value       = module.eks.cluster_endpoint
 }
 
+output "aws_load_balancer_controller_role_arn" {
+  description = "ARN of the AWS Load Balancer Controller IAM role"
+  value       = aws_iam_role.aws_load_balancer_controller.arn
+}
+
 output "cluster_security_group_id" {
   description = "Security group ids attached to the cluster control plane"
   value       = module.eks.cluster_security_group_id

@@ -8,9 +8,9 @@ output "atlantis_service_name" {
   value       = "atlantis"
 }
 
-output "atlantis_service_external_ip" {
-  description = "External IP of the Atlantis LoadBalancer service"
-  value       = "Run 'kubectl get svc atlantis -n atlantis' to get the external IP"
+output "atlantis_alb_domain" {
+  description = "ALB domain name for Atlantis"
+  value       = "Run 'kubectl get ingress atlantis -n atlantis' to get the ALB domain"
 }
 
 output "atlantis_helm_release_name" {
@@ -25,7 +25,7 @@ output "atlantis_helm_release_version" {
 
 output "github_webhook_url" {
   description = "GitHub webhook URL for Atlantis"
-  value       = "http://<EXTERNAL-IP>/events (replace <EXTERNAL-IP> with actual LoadBalancer IP)"
+  value       = "https://atlantis-alb-<hash>.eu-central-1.elb.amazonaws.com/events"
 }
 
 output "atlantis_url_instructions" {
@@ -33,14 +33,14 @@ output "atlantis_url_instructions" {
   sensitive   = true
   value = <<-EOT
     To get the Atlantis URL:
-    1. Run: kubectl get svc atlantis -n atlantis
-    2. Copy the EXTERNAL-IP value (may take a few minutes to provision)
-    3. Access Atlantis at: http://<EXTERNAL-IP>
+    1. Run: kubectl get ingress atlantis -n atlantis
+    2. Copy the ADDRESS value (static ALB domain like atlantis-alb-xxx.eu-central-1.elb.amazonaws.com)
+    3. Access Atlantis at: https://<ALB-DOMAIN>
     
     To configure GitHub webhook:
     1. Go to your GitHub repository: https://github.com/${var.github_user}/<repo-name>/settings/hooks
     2. Click "Add webhook"
-    3. Payload URL: http://<EXTERNAL-IP>/events
+    3. Payload URL: https://<ALB-DOMAIN>/events
     4. Content type: application/json
     5. Secret: ${var.github_webhook_secret}
     6. Select "Let me select individual events" and check:

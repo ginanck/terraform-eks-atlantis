@@ -58,6 +58,12 @@ resource "aws_iam_role_policy_attachment" "eks_container_registry_policy" {
   role       = aws_iam_role.eks_node_group_role.name
 }
 
+# EBS CSI Driver Policy for Node Group
+resource "aws_iam_role_policy_attachment" "eks_ebs_csi_policy" {
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+  role       = aws_iam_role.eks_node_group_role.name
+}
+
 # EKS Admin Role
 resource "aws_iam_role" "eks_admin_role" {
   name = "eks-admin"
@@ -166,4 +172,35 @@ resource "aws_iam_policy" "eks_read_only_policy" {
 resource "aws_iam_role_policy_attachment" "eks_read_only_policy_attachment" {
   policy_arn = aws_iam_policy.eks_read_only_policy.arn
   role       = aws_iam_role.eks_read_only_role.name
+}
+
+# EBS CSI Driver IAM Role for Service Account (IRSA)
+resource "aws_iam_role" "ebs_csi_driver_role" {
+  name = "${var.project_name}-ebs-csi-driver-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Effect = "Allow"
+        Principal = {
+          Federated = module.eks.oidc_provider_arn
+        }
+        Condition = {
+          StringEquals = {
+            "${replace(module.eks.cluster_oidc_issuer_url, "https://", "")}:sub" = "system:serviceaccount:kube-system:ebs-csi-controller-sa"
+            "${replace(module.eks.cluster_oidc_issuer_url, "https://", "")}:aud" = "sts.amazonaws.com"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = local.tags
+}
+
+resource "aws_iam_role_policy_attachment" "ebs_csi_driver_policy_attachment" {
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+  role       = aws_iam_role.ebs_csi_driver_role.name
 }

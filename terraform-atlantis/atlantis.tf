@@ -22,41 +22,7 @@ resource "kubernetes_service_account" "atlantis" {
   }
 }
 
-# Secret for GitHub token
-resource "kubernetes_secret" "atlantis_github" {
-  metadata {
-    name      = "atlantis-github"
-    namespace = kubernetes_namespace.atlantis.metadata[0].name
-    labels = {
-      "app.kubernetes.io/name" = "atlantis"
-      "app.kubernetes.io/instance" = "atlantis"
-    }
-  }
-
-  data = {
-    token = var.github_token
-  }
-
-  type = "Opaque"
-}
-
-# Secret for GitHub webhook
-resource "kubernetes_secret" "atlantis_webhook" {
-  metadata {
-    name      = "atlantis-webhook"
-    namespace = kubernetes_namespace.atlantis.metadata[0].name
-    labels = {
-      "app.kubernetes.io/name" = "atlantis"
-      "app.kubernetes.io/instance" = "atlantis"
-    }
-  }
-
-  data = {
-    secret = var.github_webhook_secret
-  }
-
-  type = "Opaque"
-}
+# Secrets will be managed by Helm chart
 
 # RBAC for read-only access
 resource "kubernetes_cluster_role" "read_only" {
@@ -115,26 +81,26 @@ resource "kubernetes_cluster_role_binding" "read_only" {
   }
 }
 
+
+
 # Atlantis Helm Release
 resource "helm_release" "atlantis" {
   name       = "atlantis"
-  repository = "https://runatlantis.github.io/helm-charts"
+  repository = "atlantis"
   chart      = "atlantis"
   version    = var.atlantis_version
   namespace  = kubernetes_namespace.atlantis.metadata[0].name
 
-  # Use the values.yaml file with Terraform variable substitution
+  # Use the values.yaml file
   values = [
     templatefile("${path.module}/values.yaml", {
-      atlantis_url = var.atlantis_hostname != "" ? "https://${var.atlantis_hostname}" : ""
-      org_allowlist = var.github_repo_allowlist
-      github_user = var.github_user
-      github_token = var.github_token
-      github_secret = var.github_webhook_secret
       replica_count = var.atlantis_replica_count
       storage_size = var.atlantis_storage_size
       storage_class = var.atlantis_storage_class
-      service_account_name = kubernetes_service_account.atlantis.metadata[0].name
+      github_user = var.github_user
+      github_token = var.github_token
+      github_webhook_secret = var.github_webhook_secret
+      github_repo_allowlist = var.github_repo_allowlist
     })
   ]
 
@@ -145,74 +111,14 @@ resource "helm_release" "atlantis" {
   }
 
   set {
-    name  = "orgAllowlist"
-    value = var.github_repo_allowlist
-  }
-
-  set {
-    name  = "github.user"
-    value = var.github_user
-  }
-
-  set_sensitive {
-    name  = "github.token"
-    value = var.github_token
-  }
-
-  set_sensitive {
-    name  = "github.secret"
-    value = var.github_webhook_secret
-  }
-
-  set {
-    name  = "replicaCount"
-    value = var.atlantis_replica_count
-  }
-
-  set {
-    name  = "dataStorage"
-    value = var.atlantis_storage_size
-  }
-
-  set {
-    name  = "storageClassName"
-    value = var.atlantis_storage_class
-  }
-
-  set {
     name  = "serviceAccount.name"
     value = kubernetes_service_account.atlantis.metadata[0].name
   }
 
-  set {
-    name  = "environment.ATLANTIS_ATLANTIS_URL"
-    value = var.atlantis_hostname != "" ? "https://${var.atlantis_hostname}" : ""
-  }
 
-  set {
-    name  = "environment.ATLANTIS_GH_USER"
-    value = var.github_user
-  }
-
-  set_sensitive {
-    name  = "environment.ATLANTIS_GH_TOKEN"
-    value = var.github_token
-  }
-
-  set_sensitive {
-    name  = "environment.ATLANTIS_GH_WEBHOOK_SECRET"
-    value = var.github_webhook_secret
-  }
-
-  set {
-    name  = "environment.ATLANTIS_REPO_ALLOWLIST"
-    value = var.github_repo_allowlist
-  }
 
   depends_on = [
     kubernetes_namespace.atlantis,
-    kubernetes_service_account.atlantis,
-    kubernetes_secret.atlantis_github,
-    kubernetes_secret.atlantis_webhook
+    kubernetes_service_account.atlantis
   ]
 }

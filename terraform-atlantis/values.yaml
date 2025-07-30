@@ -1,26 +1,13 @@
 # Atlantis Helm Chart Values
-# This file contains the configuration for Atlantis deployment
-
-# Atlantis URL configuration
-atlantisUrl: ""  # Will be set via Terraform variables
-
-# GitHub Organization allowlist
-orgAllowlist: ""  # Will be set via Terraform variables
-
-# GitHub configuration
-github:
-  user: ""    # Will be set via Terraform variables
-  token: ""   # Will be set via Terraform variables
-  secret: ""  # Will be set via Terraform variables
+# This file contains only the basic configuration for Atlantis deployment
 
 # Service configuration
 service:
-  type: LoadBalancer
+  type: ClusterIP
   port: 80
-  annotations: {}
 
 # Replica configuration
-replicaCount: 1
+replicaCount: ${replica_count}
 
 # Resource configuration
 resources:
@@ -32,29 +19,8 @@ resources:
     cpu: "500m"
 
 # Persistent storage configuration
-dataStorage: "10Gi"
-storageClassName: "gp2"
-
-# Security context configuration
-securityContext:
-  fsGroup: 1000
-  runAsUser: 100
-  runAsNonRoot: true
-
-# Pod security context
-podSecurityContext:
-  runAsNonRoot: true
-  seccompProfile:
-    type: "RuntimeDefault"
-
-# Container security context
-containerSecurityContext:
-  allowPrivilegeEscalation: false
-  capabilities:
-    drop:
-      - "ALL"
-  readOnlyRootFilesystem: true
-  runAsNonRoot: true
+dataStorage: "${storage_size}"
+storageClassName: "${storage_class}"
 
 # Service account configuration
 serviceAccount:
@@ -64,102 +30,31 @@ serviceAccount:
 # Environment variables
 environment:
   ATLANTIS_PORT: "4141"
-  ATLANTIS_DATA_DIR: "/atlantis"
+  ATLANTIS_DATA_DIR: "/atlantis-data"
   ATLANTIS_LOG_LEVEL: "info"
   ATLANTIS_WRITE_GIT_CREDS: "true"
+  ATLANTIS_GH_USER: "${github_user}"
+  ATLANTIS_GH_TOKEN: "${github_token}"
+  ATLANTIS_GH_WEBHOOK_SECRET: "${github_webhook_secret}"
+  ATLANTIS_REPO_ALLOWLIST: "${github_repo_allowlist}"
 
-# Ingress configuration (disabled by default, using LoadBalancer)
+# Ingress configuration (using ALB with HTTPS)
 ingress:
-  enabled: false
-
-# Health checks configuration
-readinessProbe:
   enabled: true
-  path: "/healthz"
-  port: 4141
-  initialDelaySeconds: 30
-  periodSeconds: 10
-  timeoutSeconds: 5
-  failureThreshold: 3
+  ingressClassName: "alb"
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/load-balancer-name: "atlantis-alb"
+    alb.ingress.kubernetes.io/group.name: "atlantis"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
 
-livenessProbe:
-  enabled: true
-  path: "/healthz"
-  port: 4141
-  initialDelaySeconds: 60
-  periodSeconds: 30
-  timeoutSeconds: 5
-  failureThreshold: 3
+  path: /
+  pathType: Prefix
 
-# Pod disruption budget
-podDisruptionBudget:
-  enabled: false
-  minAvailable: 1
-
-# Node selector, tolerations and affinity
-nodeSelector: {}
-tolerations: []
-affinity: {}
-
-# Extra volumes for temporary files
-extraVolumes:
-  - name: "tmp"
-    emptyDir: {}
-
-# Extra volume mounts
-extraVolumeMounts:
-  - name: "tmp"
-    mountPath: "/tmp"
-
-# Additional labels
-labels: {}
-
-# Additional annotations
-annotations: {}
-
-# Image configuration (using chart defaults)
+# Image configuration
 image:
-  repository: "runatlantis/atlantis"
-  tag: ""  # Use chart default
+  repository: "ghcr.io/runatlantis/atlantis"
+  tag: "v0.35.0"
   pullPolicy: "IfNotPresent"
-
-# Image pull secrets
-imagePullSecrets: []
-
-# Pod annotations
-podAnnotations: {}
-
-# Pod labels
-podLabels: {}
-
-# Deployment strategy
-strategy:
-  type: "RollingUpdate"
-  rollingUpdate:
-    maxUnavailable: 1
-    maxSurge: 1
-
-# Horizontal Pod Autoscaler (disabled by default)
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 3
-  targetCPUUtilizationPercentage: 80
-
-# Network policy (disabled by default)
-networkPolicy:
-  enabled: false
-
-# Service monitor for Prometheus (disabled by default)
-serviceMonitor:
-  enabled: false
-
-# Additional configuration files
-configMap:
-  enabled: false
-
-# Init containers
-initContainers: []
-
-# Sidecar containers
-sidecars: []

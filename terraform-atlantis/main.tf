@@ -18,16 +18,25 @@ terraform {
 }
 
 provider "aws" {
-  region = var.aws_region
+  region = data.terraform_remote_state.infrastructure.outputs.region
+}
+
+# Data source to get infrastructure outputs
+data "terraform_remote_state" "infrastructure" {
+  backend = "local"
+  
+  config = {
+    path = "../terraform-infrastructure/terraform.tfstate"
+  }
 }
 
 # Data sources to get EKS cluster information
 data "aws_eks_cluster" "cluster" {
-  name = var.cluster_name
+  name = data.terraform_remote_state.infrastructure.outputs.cluster_name
 }
 
 data "aws_eks_cluster_auth" "cluster" {
-  name = var.cluster_name
+  name = data.terraform_remote_state.infrastructure.outputs.cluster_name
 }
 
 provider "kubernetes" {
