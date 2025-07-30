@@ -120,7 +120,7 @@ module "eks" {
       taints = {}
 
       update_config = {
-        max_unavailable_percentage = 33
+        max_unavailable_percentage = 50
       }
 
       tags = local.tags
