@@ -1,31 +1,17 @@
 version: 3
 projects:
-- name: terraform-infrastructure
-  dir: terraform-infrastructure
-  workflow: default
-  autoplan:
-    when_modified: ["*.tf", "*.tfvars"]
-    enabled: true
-  apply_requirements: ["approved"]
-  delete_source_branch_on_merge: false
-- name: terraform-atlantis
-  dir: terraform-atlantis
-  workflow: default
-  autoplan:
-    when_modified: ["*.tf", "*.tfvars"]
-    enabled: true
-  apply_requirements: ["approved"]
-  delete_source_branch_on_merge: false
+  - name: terraform-infrastructure
+    dir: terraform-infrastructure
+    autoplan:
+      when_modified: ["*.tf", "*.tfvars"]
+      enabled: true
 
-workflows:
-  default:
-    plan:
-      steps:
-      - init
-      - plan
-    apply:
-      steps:
-      - apply
+  - name: terraform-atlantis
+    dir: terraform-atlantis
+    autoplan:
+      when_modified: ["*.tf", "*.tfvars"]
+      enabled: true
+
 
 # Atlantis configuration for separate infrastructure and application deployments
 # This file should be in the root of your repository

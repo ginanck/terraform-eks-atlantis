@@ -1,12 +1,23 @@
-# Atlantis Helm Chart Values
-# This file contains only the basic configuration for Atlantis deployment
+# Atlantis Helm Chart Values - Properly override defaults
+atlantisUrl: ""
+
+# Disable default allowlists to prevent conflicts
+orgAllowlist: "${github_repo_allowlist}"
+orgWhitelist: ""
+logLevel: ""
+
+# Use GitHub configuration block instead of individual env vars
+github:
+  user: "gkorkmaz"
+  token: "${github_token}"
+  secret: "${github_webhook_secret}"
 
 # Service configuration
 service:
   type: ClusterIP
   port: 80
 
-# Replica configuration
+# Replica configuration  
 replicaCount: ${replica_count}
 
 # Resource configuration
@@ -27,18 +38,19 @@ serviceAccount:
   create: false
   name: "atlantis"
 
-# Environment variables
+# Environment variables - only set what we need
 environment:
-  ATLANTIS_PORT: "4141"
-  ATLANTIS_DATA_DIR: "/atlantis-data"
-  ATLANTIS_LOG_LEVEL: "info"
-  ATLANTIS_WRITE_GIT_CREDS: "true"
-  ATLANTIS_GH_USER: "${github_user}"
-  ATLANTIS_GH_TOKEN: "${github_token}"
-  ATLANTIS_GH_WEBHOOK_SECRET: "${github_webhook_secret}"
   ATLANTIS_REPO_ALLOWLIST: "${github_repo_allowlist}"
+  AWS_REGION: "eu-central-1"
 
-# Ingress configuration (using ALB with HTTPS)
+# Server-side configuration to allow repo overrides
+config: |
+  repos:
+  - id: /.*/
+    allowed_overrides: [workflow, apply_requirements, delete_source_branch_on_merge]
+    allow_custom_workflows: true
+
+# Ingress configuration (using ALB)
 ingress:
   enabled: true
   ingressClassName: "alb"
@@ -49,7 +61,6 @@ ingress:
     alb.ingress.kubernetes.io/load-balancer-name: "atlantis-alb"
     alb.ingress.kubernetes.io/group.name: "atlantis"
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
-
   path: /
   pathType: Prefix
 
